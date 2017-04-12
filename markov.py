@@ -8,6 +8,7 @@ import operator
 import collections
 import os
 
+sys.setrecursionlimit(20000)
 # read the dataset
 # def reading():
 #     inputs = [];
@@ -61,7 +62,7 @@ def splitMaps(mapa, splitNumber):
     start = 0
     length = len(mapa) / splitNumber
     limit = length
-
+    
     for index in xrange(0,splitNumber):
         if limit <= len(mapa) and limit+length <= len(mapa):
             splitsAux = mapa[start:limit]
@@ -71,9 +72,8 @@ def splitMaps(mapa, splitNumber):
         else:
             limit = len(mapa)
             splitsAux = mapa[start:limit]
-
+        
         splitMap.append(splitsAux)
-
     return splitMap
 
 def networkStructure(tipo):
@@ -81,17 +81,10 @@ def networkStructure(tipo):
 
 def createMatrix(unicTiles):
     m = [ [0 for x in range(len(unicTiles))] for y in range(len(unicTiles))]
-    # for i,mi in enumerate(m):
-    #     print i, mi
-    #     print '\n'
     return m
 
 def createMatrixNetwork3(unicTiles):
-    m = [[{"sss":0}] for y in range(len(unicTiles))]
-    # for i,mi in enumerate(m):
-    #     for j,mii in enumerate(mi):
-    #         print j,mii
-    #     print '\n'
+    m = [ {"sss":0} for y in range(len(unicTiles))]
     return m
 
 def fillMatrixNetwork3(mapa,matrix,unicTiles):
@@ -100,17 +93,12 @@ def fillMatrixNetwork3(mapa,matrix,unicTiles):
         if i+1 < len(mapa):
             for prevC,actualC,diagC,botC in zip(line[0:],line[1:],mapa[i+1][0:],mapa[i+1][1:]):
                 key = prevC+diagC+botC
-                # print actualC,":",prevC,diagC,botC, '\n'
                 index = unicTiles.index(actualC)
-                # matrix[index][0]["ssM"] = 1
-                if key in matrix[index][0]:
-                    matrix[index][0][key] += 1
-                    # print index
+                
+                if key in matrix[index]:
+                    matrix[index][key] += 1
                 else:
-                    matrix[index][0][key] = 1
-                    # print index
-    # for m in matrix:
-    #     print m
+                    matrix[index][key] = 1
     return matrix
 
 def fillProbabilityMatrixNetwork3(matrix,unicTiles):
@@ -119,20 +107,14 @@ def fillProbabilityMatrixNetwork3(matrix,unicTiles):
     unicTotal = []
     
     for m in matrix:
-        for uti in m:
-            for i,j in uti.iteritems():
-                total += j
-            unicTotal.append(total)
-            total = 0
-    
+        for i,j in m.iteritems():
+            total += j
+        unicTotal.append(total)
+        total = 0
     for i,m in enumerate(matrix):
-        for uti in m:
-            for key,val in uti.iteritems():
-                if unicTotal[i] > 0:
-                    uti[key] = float(val)/unicTotal[i]
-
-    for m in matrix:
-        print m
+        for key,val in m.iteritems():
+            if unicTotal[i] > 0:
+                m[key] = float(val)/unicTotal[i]
 
     return matrix
 
@@ -198,30 +180,25 @@ def training(path,mapas,uT, splitNumber):
         splitM.append(splitMaps(input_data, splitNumber))
     
     for i in xrange(0,splitNumber):
-        m[i] = createMatrix(uT)
+        # m[i] = createMatrix(uT)
         m2[i]= createMatrixNetwork3(uT)
 
     for mapa in splitM:
         for i,sM in enumerate(mapa):
-            fillMatrix(sM, m[i], uT)
+            # fillMatrix(sM, m[i], uT)
             fillMatrixNetwork3(sM,m2[i],uT)
-            # for mi in m[i]:
-            #     print mi
-            # print '\n'
-            probabilities[i] = fillProbabilityMatrix(m[i],uT)
+
+            # probabilities[i] = fillProbabilityMatrix(m[i],uT)
             probabilities2[i] = fillProbabilityMatrixNetwork3(m2[i],uT);
 
     return probabilities2
 
 def nextMap(mapas):
     mapa =  mapas[-1]
-    # print mapa[6:-4]
     number = int(mapa[6:-4])+1
-    # print number
     
     if number > 10:
         mapa = mapa[:-6]+str(number)+".txt"
-        # print mapa
     else:
         mapa = mapa[:-5]+str(number)+".txt"
     return mapa
@@ -252,8 +229,8 @@ def getMaxProbabilityNetwork3(key,probabilities):
 
     for lisT in probabilities:
         for i,dic in enumerate(lisT):
-            if key in dic[0]:
-                val = dic[0][key]
+            if key in dic:
+                val = dic[key]
                 if val > maxP:
                     ind = i
                     maxP = val
@@ -266,9 +243,9 @@ def writingRecursionNetwork3(path,mapa,limitFile,limitColumn, probabilities, uT)
         for i in range(limitFile-1):
             newMap.append('s')
 
-        print "prev", limitFile-1,limitColumn
-        print "diag", limitFile, limitColumn
-        print "bot", limitFile,limitColumn+1
+        # print "prev", limitFile-1,limitColumn
+        # print "diag", limitFile, limitColumn
+        # print "bot", limitFile,limitColumn+1
 
         prevC = mapa[limitFile-1][limitColumn]
         diagC = mapa[limitFile][limitColumn]
@@ -290,16 +267,15 @@ def writingRecursionNetwork3(path,mapa,limitFile,limitColumn, probabilities, uT)
             newMap.append(nextString)
         
         if limitColumn == len(mapa[limitFile])-2 and limitFile == 1:
-            # deleteContent(file)
+            file = open(path, "w+")
+            deleteContent(file)
             for nm in newMap:
                 print nm
-            #     file.write(nm+'\n')
+                file.write(nm+'\n')
 
-        if limitColumn+1 < 4:
-            print "column +1"
+        if limitColumn+1 < len(mapa[-1])-1:
             writingRecursionNetwork3(path,newMap,limitFile,limitColumn+1,probabilities,uT)
         else:
-            print "fila -1 column 0"
             writingRecursionNetwork3(path,newMap,limitFile-1,0,probabilities,uT)
 
 
@@ -311,8 +287,8 @@ def writingMapNetwork3(path, mapa, uT, probabilities, splitNumber):
     nextI = []
     data = []
 
-    rH = 4
-    rW = 5
+    rH = 12
+    rW = 210
 
     for i in range(0,rH):
         file.write("s\n")
@@ -336,8 +312,6 @@ def writingMapNetwork3(path, mapa, uT, probabilities, splitNumber):
         if i <= splitNumber-1:
             newMap = writingRecursionNetwork3(path+mapa,sM,len(sM)-1,0, probabilities, uT)
 
-
-
 def writingMap(path, mapa, uT, probabilities, splitNumber):
     file = open(path+mapa, "w+")
     newMap = []
@@ -349,11 +323,11 @@ def writingMap(path, mapa, uT, probabilities, splitNumber):
     # rW =  random.randint(150,201)
     rH = 4
     rW = 5
+
     for i in range(0,rH):
         file.write("s\n")
     for j in range(0,rW):
         file.write("s")
-
         last_line = 's' * rW
 
     # put the rest of the characteres
@@ -380,7 +354,6 @@ def writingMap(path, mapa, uT, probabilities, splitNumber):
                     if character in uT:
                         index = uT.index(character)
                         nextI = getMaxProbability(index, probabilities[i])
-                        # print character, uT[index],nextI, uT[nextI];
                         nextString = line + uT[nextI] + '\n'
                         newMap.append(nextString)
                 newMap.append(last_line)
