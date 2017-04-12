@@ -9,12 +9,6 @@ import collections
 import os
 
 sys.setrecursionlimit(20000)
-# read the dataset
-# def reading():
-#     inputs = [];
-#     for line in sys.stdin:
-#         inputs.append(line[:-1]);
-#     return inputs
 
 def read(path,mapa):
     inputs = []
@@ -68,7 +62,7 @@ def splitMaps(mapa, splitNumber):
             splitsAux = mapa[start:limit]
             start = limit
             limit = start+length
-        
+
         else:
             limit = len(mapa)
             splitsAux = mapa[start:limit]
@@ -185,8 +179,11 @@ def training(path,mapas,uT, splitNumber):
 
     for mapa in splitM:
         for i,sM in enumerate(mapa):
+            # for sm in sM:
+                # print sm
             # fillMatrix(sM, m[i], uT)
             fillMatrixNetwork3(sM,m2[i],uT)
+            # print m2[i]
 
             # probabilities[i] = fillProbabilityMatrix(m[i],uT)
             probabilities2[i] = fillProbabilityMatrixNetwork3(m2[i],uT);
@@ -227,16 +224,15 @@ def getMaxProbabilityNetwork3(key,probabilities):
     maxP = 0
     ind = 0
 
-    for lisT in probabilities:
-        for i,dic in enumerate(lisT):
-            if key in dic:
-                val = dic[key]
-                if val > maxP:
-                    ind = i
-                    maxP = val
+    for i,dic in enumerate(probabilities):
+        if key in dic:
+            val = dic[key]
+            if val > maxP:
+                ind = i
+                maxP = val
     return ind
 
-def writingRecursionNetwork3(path,mapa,limitFile,limitColumn, probabilities, uT):
+def writingRecursionNetwork3(path,mapa,nextMap,limitFile,limitColumn, probabilities, uT):
     newMap = []
 
     if limitFile-1 >= 0:
@@ -267,16 +263,16 @@ def writingRecursionNetwork3(path,mapa,limitFile,limitColumn, probabilities, uT)
             newMap.append(nextString)
         
         if limitColumn == len(mapa[limitFile])-2 and limitFile == 1:
-            file = open(path, "w+")
-            deleteContent(file)
+            # file = open(path, "w+")
+            # deleteContent(file)
             for nm in newMap:
-                print nm
-                file.write(nm+'\n')
+                nextMap.append(nm)
+                # file.write(nm+'\n')
 
         if limitColumn+1 < len(mapa[-1])-1:
-            writingRecursionNetwork3(path,newMap,limitFile,limitColumn+1,probabilities,uT)
+            writingRecursionNetwork3(path,newMap,nextMap,limitFile,limitColumn+1,probabilities,uT)
         else:
-            writingRecursionNetwork3(path,newMap,limitFile-1,0,probabilities,uT)
+            writingRecursionNetwork3(path,newMap,nextMap,limitFile-1,0,probabilities,uT)
 
 
         # file.close()/
@@ -286,9 +282,10 @@ def writingMapNetwork3(path, mapa, uT, probabilities, splitNumber):
     newMap = []
     nextI = []
     data = []
+    nextMap = []
 
     rH = 12
-    rW = 210
+    rW = 200
 
     for i in range(0,rH):
         file.write("s\n")
@@ -309,8 +306,15 @@ def writingMapNetwork3(path, mapa, uT, probabilities, splitNumber):
 
     # Get the next characters
     for i,sM in enumerate(sMaps):
-        if i <= splitNumber-1:
-            newMap = writingRecursionNetwork3(path+mapa,sM,len(sM)-1,0, probabilities, uT)
+        if i <= splitNumber-2:
+            aux = 's'+('-'*len(sMaps[-1][-1]))
+            sM.append(aux)
+            # print '\n',sM,'\n'
+
+        newMap = writingRecursionNetwork3(path+mapa,sM, nextMap,len(sM)-1,0, probabilities[i], uT)
+
+    for nt in nextMap:
+        print nt
 
 def writingMap(path, mapa, uT, probabilities, splitNumber):
     file = open(path+mapa, "w+")
@@ -378,14 +382,8 @@ def main():
     mapas = obtainPaths(path)
     
     uT = []
-    splitNumber = 1
+    splitNumber = 3
     probabilities = training(path,mapas,uT, splitNumber)
-    # print '\n'
-    # for i,p in enumerate(probabilities):
-    #     for pi in p:
-    #         print i, pi
-    #     print '\n'
-
     sampling(path,mapas,uT, probabilities,splitNumber)
 
 
