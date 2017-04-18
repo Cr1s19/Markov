@@ -30,8 +30,8 @@ def read(path,mapa):
         line = 's'*length
         inputs.append(line)
 
-    for i in inputs:
-        print i
+    # for i in inputs:
+    #     print i
 
     return inputs
 
@@ -82,7 +82,6 @@ def createMatrixNetwork3(unicTiles):
     return m
 
 def fillMatrixNetwork3(mapa,matrix,unicTiles):
-    m = []
     for i,line in enumerate(mapa):
         if i+1 < len(mapa):
             for prevC,actualC,diagC,botC in zip(line[0:],line[1:],mapa[i+1][0:],mapa[i+1][1:]):
@@ -93,24 +92,30 @@ def fillMatrixNetwork3(mapa,matrix,unicTiles):
                     matrix[index][key] += 1
                 else:
                     matrix[index][key] = 1
+
     return matrix
 
-def fillProbabilityMatrixNetwork3(matrix,unicTiles):
+def fillProbabilityMatrixNetwork3(mapa,matrix,unicTiles):
     total = 0
     unicTilesTotal = []
     unicTotal = []
-    
+    pM = createMatrixNetwork3(unicTiles)
+    fillMatrixNetwork3(mapa,pM,unicTiles)
+
     for m in matrix:
         for i,j in m.iteritems():
             total += j
         unicTotal.append(total)
         total = 0
+
+    print unicTotal
     for i,m in enumerate(matrix):
         for key,val in m.iteritems():
             if unicTotal[i] > 0:
-                m[key] = float(val)/unicTotal[i]
+                auxVal = val
+                pM[i][key] = float(auxVal)/unicTotal[i]
 
-    return matrix
+    return pM
 
 def garantizeSum(probabilities):
     # Garantize that the sum is equal to 1 or an aproximatly
@@ -142,7 +147,7 @@ def fillMatrix(mapa,matrix,unicTiles):
 
 def fillProbabilityMatrix(matrix,unicTiles):
     pM = createMatrix(unicTiles)
-    createMatrixNetwork3(unicTiles);
+    # createMatrixNetwork3(unicTiles);
     total = 0
     unicTilesTotal = []
     unicTotal = []
@@ -164,7 +169,6 @@ def fillProbabilityMatrix(matrix,unicTiles):
 def training(path,mapas,uT, splitNumber):
     probabilities = [None]*splitNumber
     probabilities2 = [None]*splitNumber
-    m = [None] * splitNumber
     m2 = [None] * splitNumber
     splitM = []
     
@@ -175,18 +179,24 @@ def training(path,mapas,uT, splitNumber):
     
     for i in xrange(0,splitNumber):
         # m[i] = createMatrix(uT)
-        m2[i]= createMatrixNetwork3(uT)
+        m2[i] = createMatrixNetwork3(uT)
 
+    print '\n'
     for mapa in splitM:
         for i,sM in enumerate(mapa):
+            if i <= splitNumber-2:
+                aux = ('s'*len(sM[-1]))
+                sM.append(aux)
+
             # for sm in sM:
-                # print sm
+            #     print sm
+            print '\n'
             # fillMatrix(sM, m[i], uT)
-            fillMatrixNetwork3(sM,m2[i],uT)
-            # print m2[i]
+            m = fillMatrixNetwork3(sM,m2[i],uT)
+            print "sum:",i,'\n', m2[i],"\n"
 
             # probabilities[i] = fillProbabilityMatrix(m[i],uT)
-            probabilities2[i] = fillProbabilityMatrixNetwork3(m2[i],uT);
+            probabilities2[i] = fillProbabilityMatrixNetwork3(sM,m,uT);
 
     return probabilities2
 
@@ -222,7 +232,7 @@ def deleteContent(pfile):
 
 def getMaxProbabilityNetwork3(key,probabilities):
     maxP = 0
-    ind = 0
+    ind = 1
 
     for i,dic in enumerate(probabilities):
         if key in dic:
@@ -307,12 +317,15 @@ def writingMapNetwork3(path, mapa, uT, probabilities, splitNumber):
     # Get the next characters
     for i,sM in enumerate(sMaps):
         if i <= splitNumber-2:
-            aux = 's'+('-'*len(sMaps[-1][-1]))
+            aux = 's'+('s'*len(sMaps[-1][-1]))
             sM.append(aux)
-            # print '\n',sM,'\n'
 
+        print "Split: ",i,"\n",probabilities[i],"\n"
         newMap = writingRecursionNetwork3(path+mapa,sM, nextMap,len(sM)-1,0, probabilities[i], uT)
+        for nt in nextMap:
+            print nt
 
+    print '\n'
     for nt in nextMap:
         print nt
 
@@ -382,10 +395,10 @@ def main():
     mapas = obtainPaths(path)
     
     uT = []
-    splitNumber = 3
+    splitNumber = 1
     probabilities = training(path,mapas,uT, splitNumber)
     sampling(path,mapas,uT, probabilities,splitNumber)
-
+    print uT
 
 if __name__ == "__main__":
     main()
